@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentorHub - Student Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar bg-dark text-white">
+                <div class="text-center my-4">
+                    <h4>MentorHub</h4>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard" data-bs-toggle="tab">
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#tasks" data-bs-toggle="tab">
+                            <i class="bi bi-list-task me-2"></i>Tasks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#placement" data-bs-toggle="tab">
+                            <i class="bi bi-briefcase me-2"></i>Placement
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#meetings" data-bs-toggle="tab">
+                            <i class="bi bi-calendar-event me-2"></i>Meetings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#profile" data-bs-toggle="tab">
+                            <i class="bi bi-person me-2"></i>Profile
+                        </a>
+                    </li>
+                    <li class="nav-item mt-3">
+                        <button class="btn btn-outline-light btn-sm w-100" id="logoutBtn">
+                            <i class="bi bi-box-arrow-left me-2"></i>Logout
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4 main-content">
+                <div class="tab-content">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Student Dashboard</h1>
+                        </div>
+                        
+                        <!-- Stats Cards -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <div class="stat-value" id="totalTasks">0</div>
+                                        <div class="stat-label">Total Tasks</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <div class="stat-value" id="completedTasks">0</div>
+                                        <div class="stat-label">Completed Tasks</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <div class="stat-value" id="applications">0</div>
+                                        <div class="stat-label">Applications</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body">
+                                        <div class="stat-value" id="offers">0</div>
+                                        <div class="stat-label">Offers</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Tasks -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Recent Tasks</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="recentTasksTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Mentor</th>
+                                                <th>Deadline</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Filled by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Upcoming Meetings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Upcoming Meetings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="upcomingMeetingsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Organizer</th>
+                                                <th>Date & Time</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Filled by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tasks Tab -->
+                    <div class="tab-pane fade" id="tasks">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">My Tasks</h1>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary filter-task" data-status="all">All</button>
+                                <button type="button" class="btn btn-outline-primary filter-task" data-status="pending">Pending</button>
+                                <button type="button" class="btn btn-outline-primary filter-task" data-status="in_progress">In Progress</button>
+                                <button type="button" class="btn btn-outline-primary filter-task" data-status="completed">Completed</button>
+                            </div>
+                        </div>
+                        
+                        <div class="row" id="taskList">
+                            <!-- Task cards will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Placement Tab -->
+                    <div class="tab-pane fade" id="placement">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Placement Information</h1>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlacementModal">
+                                <i class="bi bi-plus"></i> Add Status
+                            </button>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Placement Updates</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group" id="placementUpdatesList">
+                                    <!-- Updates will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>My Placement Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="placementStatusTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Company</th>
+                                                <th>Job Title</th>
+                                                <th>Status</th>
+                                                <th>Application Date</th>
+                                                <th>Offer Date</th>
+                                                <th>Salary</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Filled by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Meetings Tab -->
+                    <div class="tab-pane fade" id="meetings">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Meetings</h1>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary filter-meeting" data-status="upcoming">Upcoming</button>
+                                <button type="button" class="btn btn-outline-primary filter-meeting" data-status="past">Past</button>
+                                <button type="button" class="btn btn-outline-primary filter-meeting" data-status="all">All</button>
+                            </div>
+                        </div>
+                        
+                        <div class="row" id="meetingList">
+                            <!-- Meeting cards will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Tab -->
+                    <div class="tab-pane fade" id="profile">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">My Profile</h1>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5>Basic Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="profileForm">
+                                            <div class="mb-3">
+                                                <label for="profileFullName" class="form-label">Full Name</label>
+                                                <input type="text" class="form-control" id="profileFullName" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="profileEmail" class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="profileEmail" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="profileRollNumber" class="form-label">Roll Number</label>
+                                                <input type="text" class="form-control" id="profileRollNumber" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="profileDepartment" class="form-label">Department</label>
+                                                <input type="text" class="form-control" id="profileDepartment" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="profileBatchYear" class="form-label">Batch Year</label>
+                                                <input type="number" class="form-control" id="profileBatchYear" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Change Password</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="passwordForm">
+                                            <div class="mb-3">
+                                                <label for="currentPassword" class="form-label">Current Password</label>
+                                                <input type="password" class="form-control" id="currentPassword" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="newPassword" class="form-label">New Password</label>
+                                                <input type="password" class="form-control" id="newPassword" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="confirmNewPassword" class="form-label">Confirm New Password</label>
+                                                <input type="password" class="form-control" id="confirmNewPassword" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">Change Password</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Task Status Modal -->
+    <div class="modal fade" id="taskStatusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Task Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskStatusForm">
+                        <input type="hidden" id="taskId">
+                        <div class="mb-3">
+                            <label for="taskStatus" class="form-label">Status</label>
+                            <select class="form-select" id="taskStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskRemarks" class="form-label">Remarks</label>
+                            <textarea class="form-control" id="taskRemarks" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveTaskStatus">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Meeting Attendance Modal -->
+    <div class="modal fade" id="meetingAttendanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Meeting Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="meetingAttendanceForm">
+                        <input type="hidden" id="meetingId">
+                        <div class="mb-3">
+                            <label for="attendanceStatus" class="form-label">Will you attend?</label>
+                            <select class="form-select" id="attendanceStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="attending">Yes, I'll attend</option>
+                                <option value="declined">No, I can't attend</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveAttendanceStatus">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Placement Status Modal -->
+    <div class="modal fade" id="addPlacementModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Placement Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="placementStatusForm">
+                        <div class="mb-3">
+                            <label for="placementCompany" class="form-label">Company Name</label>
+                            <input type="text" class="form-control" id="placementCompany" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="placementJobTitle" class="form-label">Job Title</label>
+                            <input type="text" class="form-control" id="placementJobTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="placementStatus" class="form-label">Status</label>
+                            <select class="form-select" id="placementStatus" required>
+                                <option value="applied">Applied</option>
+                                <option value="interview">Interview</option>
+                                <option value="offered">Offered</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="accepted">Accepted</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="placementApplicationDate" class="form-label">Application Date</label>
+                            <input type="date" class="form-control" id="placementApplicationDate">
+                        </div>
+                        <div class="mb-3">
+                            <label for="placementOfferDate" class="form-label">Offer Date</label>
+                            <input type="date" class="form-control" id="placementOfferDate">
+                        </div>
+                        <div class="mb-3">
+                            <label for="placementSalary" class="form-label">Salary (if applicable)</label>
+                            <input type="number" step="0.01" class="form-control" id="placementSalary">
+                        </div>
+                        <div class="mb-3">
+                            <label for="placementNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="placementNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="savePlacementStatus">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="student-dashboard.js"></script>
+</body>
+</html>
