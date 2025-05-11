@@ -23,30 +23,40 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Load all dashboard data
             const [dashboardRes, tasksRes, updatesRes, studentsRes] = await Promise.all([
-                fetch('/api/dashboard/mentor', {
+                fetch('http://127.0.0.1:5000/api/dashboard/mentor', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('/api/tasks', {
+                fetch('http://127.0.0.1:5000/api/tasks', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('/api/placement-updates', {
+                fetch('http://127.0.0.1:5000/api/placement-updates', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('/api/students', {
+                fetch('http://127.0.0.1:5000/api/students', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
+                }).catch(err => {
+                    console.error('Failed to fetch students:', err);
+                    return { ok: false, status: 404 };
                 })
             ]);
             
+            console.log('Dashboard Response:', dashboardRes.status);
+            console.log('Tasks Response:', tasksRes.status);
+            console.log('Placement Updates Response:', updatesRes.status);
+            console.log('Students Response:', studentsRes.status);
+
             if (!dashboardRes.ok || !tasksRes.ok || !updatesRes.ok || !studentsRes.ok) {
-                throw new Error('Failed to load dashboard data');
+                const dashboardError = await dashboardRes.text();
+                console.error('Dashboard error details:', dashboardError);
+                throw new Error(`Failed to load dashboard data: ${dashboardError}`);
             }
             
             const dashboardData = await dashboardRes.json();
@@ -54,7 +64,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const updatesData = await updatesRes.json();
             const studentsData = await studentsRes.json();
             
+            console.log('Dashboard Data:', dashboardData);
+            console.log('Tasks Data:', tasksData);
+            console.log('Placement Updates Data:', updatesData);
+            console.log('Students Data:', studentsData);
+
             // Update stats
+            
             document.getElementById('totalTasks').textContent = dashboardData.taskStats.total_tasks;
             document.getElementById('completedTasks').textContent = dashboardData.taskStats.completed_tasks;
             document.getElementById('totalStudents').textContent = dashboardData.studentStats.total_students;
@@ -63,37 +79,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 Math.round((dashboardData.studentStats.students_with_placements / dashboardData.studentStats.total_students) * 100) + '%' : '0%';
             
             // Populate recent tasks table
+            const tasksArray = tasksData.tasks || tasksData.data || tasksData;
+            if (!Array.isArray(tasksData.tasks) || tasksData.tasks.length === 0) {
+                console.warn("No tasks found.");
+                return;
+            }
+            
             const recentTasksTable = document.getElementById('recentTasksTable').querySelector('tbody');
             recentTasksTable.innerHTML = '';
-            
-            tasksData.slice(0, 5).forEach(task => {
+            if (Array.isArray(tasksArray) && tasksArray.length > 0) {
+                tasksArray.slice(0, 5).forEach(task => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.title}</td>
+                        <td>${task.assigned_count || task.student_id ? 1 : 0} students</td>
+                        <td>${task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
+                        <td>
+                            <span class="badge ${task.completed_count === task.assigned_count ? 'bg-success' : 
+                                task.completed_count > 0 ? 'bg-info' : 'bg-warning text-dark'}">
+                                ${task.completed_count || 0}/${task.assigned_count || (task.student_id ? 1 : 0)} completed
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-task-btn" data-task-id="${task.id}">
+                                View
+                            </button>
+                        </td>
+                    `;
+                    recentTasksTable.appendChild(row);
+                });
+            } else {
+                console.warn("No tasks found in response:", tasksData);
+                // Add a "no tasks" row
                 const row = document.createElement('tr');
-                
-                row.innerHTML = `
-                    <td>${task.title}</td>
-                    <td>${task.assigned_count} students</td>
-                    <td>${task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
-                    <td>
-                        <span class="badge ${task.completed_count === task.assigned_count ? 'bg-success' : 
-                            task.completed_count > 0 ? 'bg-info' : 'bg-warning text-dark'}">
-                            ${task.completed_count}/${task.assigned_count} completed
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary view-task-btn" data-task-id="${task.id}">
-                            View
-                        </button>
-                    </td>
-                `;
-                
+                row.innerHTML = '<td colspan="5" class="text-center">No tasks found</td>';
                 recentTasksTable.appendChild(row);
-            });
-            
+            }
             // Populate placement updates list
             const updatesList = document.getElementById('placementUpdatesList');
             updatesList.innerHTML = '';
             
-            updatesData.slice(0, 3).forEach(update => {
+            updatesData.data.slice(0, 3).forEach(update => {
                 const updateItem = document.createElement('a');
                 updateItem.className = `list-group-item list-group-item-action ${update.is_important ? 'list-group-item-warning' : ''}`;
                 updateItem.innerHTML = `
@@ -132,15 +158,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
         } catch (err) {
-            console.error('Error loading dashboard data:', err);
-            alert('Failed to load dashboard data');
+            console.error('Detailed error loading dashboard:', err);
+            alert(`Error: ${err.message}`);
         }
     }
     
     // Create placement chart
     function createPlacementChart(students) {
         const ctx = document.getElementById('placementChart').getContext('2d');
-        
+        if (!ctx) return;
         // Count placement status
         const statusCounts = {
             placed: 0,
@@ -179,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load profile data
     async function loadProfile() {
         try {
-            const response = await fetch('/api/profile', {
+            const response = await fetch('http://127.0.0.1:5000/api/profile', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -211,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load tasks
     async function loadTasks(filter = 'all') {
         try {
-            const response = await fetch('/api/tasks', {
+            const response = await fetch('http://127.0.0.1:5000/api/tasks', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -221,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Failed to load tasks');
             }
             
-            const tasks = await response.json();
+            const { data: tasks } = await response.json();
             const tasksTable = document.getElementById('tasksTable').querySelector('tbody');
             tasksTable.innerHTML = '';
             
@@ -264,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // View task details
     async function viewTaskDetails(taskId) {
         try {
-            const response = await fetch(`/api/tasks/${taskId}`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/tasks/${taskId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -318,12 +344,12 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadPlacementData() {
         try {
             const [updatesRes, statusRes] = await Promise.all([
-                fetch('/api/placement-updates', {
+                fetch('http://127.0.0.1:5000/api/placement-updates', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('/api/placement-status', {
+                fetch('http://127.0.0.1:5000/api/placement-status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -415,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load students
     async function loadStudents() {
         try {
-            const response = await fetch('/api/students', {
+            const response = await fetch('http://127.0.0.1:5000/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -469,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load meetings
     async function loadMeetings(filter = 'upcoming') {
         try {
-            const response = await fetch('/api/meetings', {
+            const response = await fetch('http://127.0.0.1:5000/api/meetings', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -536,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // View meeting details
     async function viewMeetingDetails(meetingId) {
         try {
-            const response = await fetch(`/api/meetings/${meetingId}`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -560,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete meeting
     async function deleteMeeting(meetingId) {
         try {
-            const response = await fetch(`/api/meetings/${meetingId}`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -583,7 +609,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete placement update
     async function deletePlacementUpdate(updateId) {
         try {
-            const response = await fetch(`/api/placement-updates/${updateId}`, {
+            
+            const response = await fetch(`http://127.0.0.1:5000/api/placement-updates/${updateId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -606,7 +633,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Edit placement status
     async function editPlacementStatus(placementId) {
         try {
-            const response = await fetch(`/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -625,12 +652,16 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error editing placement status:', err);
             alert('Failed to load placement status');
         }
+        statusCounts.placed = students.filter(student => 
+        student.placement_status && student.placement_status === 'accepted'
+        ).length;
+        statusCounts.unplaced = students.length - statusCounts.placed;
     }
     
     // Delete placement status
     async function deletePlacementStatus(placementId) {
         try {
-            const response = await fetch(`/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -658,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const studentIds = Array.from(document.getElementById('taskStudents').selectedOptions).map(opt => opt.value);
         
         try {
-            const response = await fetch('/api/tasks', {
+            const response = await fetch('http://127.0.0.1:5000/api/tasks', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -700,7 +731,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const isImportant = document.getElementById('updateImportant').checked;
         
         try {
-            const response = await fetch('/api/placement-updates', {
+            // In your frontend code where you post updates:
+                const isImportant = document.getElementById('updateImportant').checked;
+                const response = await fetch('http://127.0.0.1:5000/api/placement-updates', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -713,7 +746,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     is_important: isImportant
                 })
             });
-            
             if (!response.ok) {
                 throw new Error('Failed to post placement update');
             }
@@ -746,7 +778,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const notes = document.getElementById('placementNotes').value;
         
         try {
-            const response = await fetch('/api/placement-status', {
+            const response = await fetch('http://127.0.0.1:5000/api/placement-status', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -793,7 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const participantIds = Array.from(document.getElementById('meetingParticipants').selectedOptions).map(opt => opt.value);
         
         try {
-            const response = await fetch('/api/meetings', {
+            const response = await fetch('http://127.0.0.1:5000/api/meetings', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -839,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const specialization = document.getElementById('profileSpecialization').value;
         
         try {
-            const response = await fetch('/api/profile', {
+            const response = await fetch('http://127.0.0.1:5000/api/profile', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -881,7 +913,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            const response = await fetch('/api/change-password', {
+            const response = await fetch('http://127.0.0.1:5000/api/change-password', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -933,7 +965,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load students for task assignment when modal is shown
     document.getElementById('createTaskModal').addEventListener('show.bs.modal', async function() {
         try {
-            const response = await fetch('/api/students', {
+            const response = await fetch('http://127.0.0.1:5000/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -943,7 +975,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Failed to load students');
             }
             
-            const students = await response.json();
+            const { data: students } = await response.json();
             const studentsSelect = document.getElementById('taskStudents');
             studentsSelect.innerHTML = '';
             
@@ -963,7 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load students for placement status when modal is shown
     document.getElementById('addPlacementStatusModal').addEventListener('show.bs.modal', async function() {
         try {
-            const response = await fetch('/api/students', {
+            const response = await fetch('http://127.0.0.1:5000/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -994,12 +1026,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('scheduleMeetingModal').addEventListener('show.bs.modal', async function() {
         try {
             const [studentsRes, mentorsRes] = await Promise.all([
-                fetch('/api/students', {
+                fetch('http://127.0.0.1:5000/api/students', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('/api/mentors', {
+                fetch('http://127.0.0.1:5000/api/mentors', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

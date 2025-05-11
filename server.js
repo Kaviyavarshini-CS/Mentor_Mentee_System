@@ -5,13 +5,17 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
-app.use(bodyParser.json());
+app.use(cors({
+    origin: 'http://127.0.0.1:5500',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Database connection
@@ -28,7 +32,8 @@ const dbConfig = {
 const db = mysql.createPool(dbConfig);
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || '1234567890';
+
 
 // Test database connection
 async function testConnection() {
@@ -46,30 +51,40 @@ testConnection();
 // Authentication middleware
 const authenticate = (roles = []) => {
     return async (req, res, next) => {
+        console.log('Authentication middleware triggered');
         const token = req.header('Authorization')?.replace('Bearer ', '');
-        
+        console.log('Token from Header:', token);
+
         if (!token) {
+            console.log('No token provided');
             return res.status(401).json({ success: false, message: 'No token, authorization denied' });
         }
 
         try {
+            console.log('Verifying token...');
             const decoded = jwt.verify(token, JWT_SECRET);
+            console.log('Decoded JWT:', decoded);
+
             const [users] = await db.query('SELECT * FROM users WHERE id = ?', [decoded.user.id]);
-            
             if (!users.length) {
                 return res.status(401).json({ success: false, message: 'User not found' });
             }
 
-            const user = users[0];
-            
-            if (roles.length && !roles.includes(user.role)) {
-                return res.status(403).json({ success: false, message: 'Unauthorized access' });
+            req.user = users[0];
+
+            // If role-based check
+            if (roles.length && !roles.includes(req.user.role)) {
+                return res.status(403).json({ success: false, message: 'Access forbidden: insufficient role' });
             }
 
-            req.user = user;
-            next();
+            next(); // ✅ PROCEED TO NEXT MIDDLEWARE / ROUTE
         } catch (err) {
-            res.status(401).json({ success: false, message: 'Token is not valid' });
+            console.error('Detailed auth error:', err);
+            res.status(401).json({ 
+                success: false, 
+                message: 'Token is not valid',
+                error: err.message 
+            });
         }
     };
 };
@@ -99,14 +114,14 @@ async function executeTransaction(queries) {
 // Routes
 
 // Health check endpoint
-app.get('http://localhost:5000/api/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({ success: true, message: 'Server is running' });
 });
 
 // User Registration
-app.post('http://localhost:5000/api/register', async (req, res) => {
+app.post('/api/register', async (req, res) => {
     try {
-        const { username, email, password, role, full_name } = req.body;
+        const { username, email, password, role, full_name, department, roll_number } = req.body;
         
         // Validate required fields
         if (!username || !email || !password || !role) {
@@ -144,8 +159,8 @@ app.post('http://localhost:5000/api/register', async (req, res) => {
 
         // Create user
         const [result] = await db.query(
-            'INSERT INTO users (username, email, password, role, full_name) VALUES (?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, role, full_name || null]
+            'INSERT INTO users (username, email, password, role, full_name, department, roll_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [username, email, hashedPassword, role, full_name || null, department || null, roll_number || null]
         );
 
         res.status(201).json({ 
@@ -155,7 +170,9 @@ app.post('http://localhost:5000/api/register', async (req, res) => {
                 id: result.insertId,
                 username,
                 email,
-                role
+                role,
+                department,
+                roll_number
             }
         });
     } catch (err) {
@@ -177,7 +194,7 @@ app.post('http://localhost:5000/api/register', async (req, res) => {
 });
 
 // User Login
-app.post('http://localhost:5000/api/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -218,7 +235,7 @@ app.post('http://localhost:5000/api/login', async (req, res) => {
         };
 
         // Sign token
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign(payload, process.env.JWT_SECRET || '1234567890', { expiresIn: '7d' });
 
         // Omit password from response
         const { password: _, ...userWithoutPassword } = user;
@@ -239,7 +256,7 @@ app.post('http://localhost:5000/api/login', async (req, res) => {
 });
 
 // Get current user profile
-app.get('http://localhost:5000/api/profile', authenticate(), async (req, res) => {
+app.get('/api/profile', authenticate(), async (req, res) => {
     try {
         const userId = req.user.id;
         
@@ -272,7 +289,7 @@ app.get('http://localhost:5000/api/profile', authenticate(), async (req, res) =>
 // Task Management Endpoints
 
 // Create task (Mentor only)
-app.post('http://localhost:5000/api/tasks', authenticate(['mentor']), async (req, res) => {
+app.post('/api/tasks', authenticate(['mentor']), async (req, res) => {
     try {
         const { title, description, student_id, due_date } = req.body;
         const mentor_id = req.user.id;
@@ -324,7 +341,7 @@ app.post('http://localhost:5000/api/tasks', authenticate(['mentor']), async (req
 });
 
 // Get tasks for current user
-app.get('http://localhost:5000/api/tasks', authenticate(), async (req, res) => {
+app.get('/api/tasks', authenticate([]), async (req, res) => {
     try {
         const userId = req.user.id;
         const role = req.user.role;
@@ -374,7 +391,7 @@ app.get('http://localhost:5000/api/tasks', authenticate(), async (req, res) => {
 });
 
 // Update task status (Student only)
-app.patch('http://localhost:5000/api/tasks/:id/status', authenticate(['student']), async (req, res) => {
+app.patch('/api/tasks/:id/status', authenticate(['student']), async (req, res) => {
     try {
         const taskId = req.params.id;
         const studentId = req.user.id;
@@ -413,24 +430,145 @@ app.patch('http://localhost:5000/api/tasks/:id/status', authenticate(['student']
     }
 });
 
+// Mentor Dashboard Data Endpoint
+app.get('/api/dashboard/mentor', authenticate(['mentor']), async (req, res) => {
+    console.log('Dashboard endpoint hit');
+    try {
+        const mentorId = req.user.id;
+        console.log(`Fetching dashboard for mentor ID: ${mentorId}`);
+        // Query for task statistics
+        const [taskStats] = await db.query(`
+            SELECT 
+                COUNT(*) AS total_tasks, 
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_tasks
+            FROM tasks 
+            WHERE mentor_id = ?
+        `, [mentorId]);
+
+        // Query for student statistics
+        const [studentStats] = await db.query(`
+            SELECT 
+                COUNT(*) AS total_students,
+                SUM(CASE WHEN placement_status = 'accepted' THEN 1 ELSE 0 END) AS students_with_placements
+            FROM users 
+            WHERE role = 'student' AND mentor_id = ?
+        `, [mentorId]);
+
+        res.json({
+            success: true,
+            taskStats,
+            studentStats
+        });
+    } catch (err) {
+        console.error('Error fetching dashboard data for mentor:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load mentor dashboard data',
+            error: err.message
+        });
+    }
+});
+//Student dashboard Data Endpoint
+app.get('/api/dashboard/student', authenticate(['student', 'placement_officer']), async (req, res) => {
+    try {
+        const studentId = req.user.id;
+
+        // Query for task statistics
+        const [taskStats] = await db.query(`
+            SELECT 
+                COUNT(*) AS total_tasks, 
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_tasks
+            FROM tasks 
+            WHERE student_id = ?
+        `, [studentId]);
+
+        // Query for placement statistics
+        const [placementStats] = await db.query(`
+            SELECT 
+                COUNT(*) AS total_applications,
+                SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) AS accepted_offers,
+                SUM(CASE WHEN status = 'offered' THEN 1 ELSE 0 END) AS pending_offers
+            FROM student_applications 
+            WHERE student_id = ?
+        `, [studentId]);
+
+        res.json({
+            success: true,
+            taskStats,
+            placementStats
+        });
+    } catch (err) {
+        console.error('Error fetching student dashboard data:', err);
+        res.status(500).json({ success: false, message: 'Failed to load student dashboard data' });
+    }
+});
 // Placement Endpoints
+// Get all placement updates
+app.post('/api/placement-updates', authenticate(['mentor', 'placement_officer']), async (req, res) => {
+    const { title, description, link, is_important } = req.body;
+    const mentorId = req.user.id; // Assuming authenticate middleware sets req.user
+
+    try {
+        await db.query(`
+            INSERT INTO placements (mentor_id, title, description, link, is_important, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        `, [mentorId, title, description, link, is_important]);
+
+        res.status(201).json({ success: true, message: 'Placement update posted successfully' });
+    } catch (err) {
+        console.error('Error posting placement update:', err);
+        res.status(500).json({ success: false, message: 'Failed to post placement update' });
+    }
+});
+
+
+// Get all students for a mentor
+app.get('/api/students', authenticate(['mentor']), async (req, res) => {
+  console.log('GET /api/students endpoint hit'); // Add this
+  try {
+    const mentorId = req.user.id;
+    console.log(`Fetching students for mentor ID: ${mentorId}`); // Add this
+    
+    const [students] = await db.query(`
+      SELECT id AS user_id, username, full_name, email, placement_status
+      FROM users
+      WHERE role = 'student' AND mentor_id = ?
+      ORDER BY created_at DESC
+    `, [mentorId]);
+
+    console.log(`Found ${students.length} students`); // Add this
+    
+    res.json({ success: true, data: students });
+  } catch (err) {
+    console.error('Error fetching students:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch students' });
+  }
+});
 
 // Create placement opportunity (Mentor or Placement Officer)
-app.post('http://localhost:5000/api/placements', authenticate(['mentor', 'placement_officer']), async (req, res) => {
+app.post('/api/placements', authenticate(['mentor', 'placement_officer']), async (req, res) => {
     try {
-        const { company_name, position, description, application_link, due_date } = req.body;
+        // Modified to accept either format
+        const { 
+            company_name = req.body.title,  // Fallback to title if company_name not provided
+            position = 'Update',            // Default position
+            description = req.body.description,
+            application_link = req.body.link,
+            due_date = new Date().toISOString()  // Default to now
+        } = req.body;
+
         const mentor_id = req.user.id;
 
-        if (!company_name || !position || !description || !due_date) {
+        if (!company_name || !description) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Missing required fields: company_name, position, description, due_date' 
+                message: 'Missing required fields' 
             });
         }
 
         const [result] = await db.query(
             'INSERT INTO placements (company_name, position, description, mentor_id, application_link, due_date) VALUES (?, ?, ?, ?, ?, ?)',
-            [company_name, position, description, mentor_id, application_link || null, due_date]
+            [company_name, position, description, mentor_id, application_link, due_date]
         );
 
         res.status(201).json({ 
@@ -451,7 +589,7 @@ app.post('http://localhost:5000/api/placements', authenticate(['mentor', 'placem
 });
 
 // Get all placement opportunities
-app.get('http://localhost:5000/api/placements', authenticate(), async (req, res) => {
+app.get('/api/placements', authenticate(), async (req, res) => {
     try {
         const [placements] = await db.query(`
             SELECT p.*, u.username as mentor_username, u.full_name as mentor_name
@@ -474,8 +612,9 @@ app.get('http://localhost:5000/api/placements', authenticate(), async (req, res)
     }
 });
 
+
 // Apply for placement (Student only)
-app.post('http://localhost:5000/api/placements/:id/apply', authenticate(['student']), async (req, res) => {
+app.post('/api/placements/:id/apply', authenticate(['student']), async (req, res) => {
     try {
         const placementId = req.params.id;
         const studentId = req.user.id;
@@ -533,7 +672,7 @@ app.post('http://localhost:5000/api/placements/:id/apply', authenticate(['studen
 });
 
 // Get my applications (Student only)
-app.get('http://localhost:5000/api/my-applications', authenticate(['student']), async (req, res) => {
+app.get('/api/my-applications', authenticate(['student']), async (req, res) => {
     try {
         const studentId = req.user.id;
 
@@ -560,9 +699,9 @@ app.get('http://localhost:5000/api/my-applications', authenticate(['student']), 
         });
     }
 });
-
+ 
 // Update application status (Mentor only)
-app.patch('http://localhost:5000/api/applications/:id/status', authenticate(['mentor']), async (req, res) => {
+app.patch('/api/applications/:id/status', authenticate(['mentor']), async (req, res) => {
     try {
         const applicationId = req.params.id;
         const mentorId = req.user.id;
@@ -608,7 +747,136 @@ app.patch('http://localhost:5000/api/applications/:id/status', authenticate(['me
         });
     }
 });
+//meetings
+app.get('/api/meetings', authenticate(['student', 'mentor']), async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const role = req.user.role;
 
+        let query = '';
+        let params = [];
+
+        if (role === 'student') {
+            query = `
+                SELECT m.*, u.username AS organizer_name
+                FROM meetings m
+                JOIN users u ON m.organizer_id = u.id
+                WHERE m.id IN (
+                    SELECT meeting_id FROM meeting_participants WHERE participant_id = ?
+                )
+                ORDER BY m.scheduled_time ASC
+            `;
+            params = [userId];
+        } else if (role === 'mentor') {
+            query = `
+                SELECT m.*, u.username AS organizer_name
+                FROM meetings m
+                JOIN users u ON m.organizer_id = u.id
+                WHERE m.organizer_id = ?
+                ORDER BY m.scheduled_time ASC
+            `;
+            params = [userId];
+        } else {
+            return res.status(403).json({ success: false, message: 'Unauthorized access' });
+        }
+
+        console.log('SQL Query:', query);
+        console.log('Parameters:', params);
+
+        const [meetings] = await db.query(query, params);
+
+        res.json({ success: true, data: meetings });
+    } catch (err) {
+        console.error('Error fetching meetings:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch meetings' });
+    }
+});
+app.get('/api/dashboard/placement-officer', authenticate(['placement_officer']), async (req, res) => {
+    try {
+        // Query for placement statistics
+        const [placementStats] = await db.query(`
+            SELECT 
+                COUNT(*) AS total_students,
+                SUM(CASE WHEN placement_status = 'accepted' THEN 1 ELSE 0 END) AS placed_students,
+                ROUND(SUM(CASE WHEN placement_status = 'accepted' THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS placement_percentage,
+                ROUND(AVG(CASE WHEN placement_status = 'accepted' THEN salary ELSE NULL END), 2) AS avg_salary
+            FROM users
+            LEFT JOIN student_applications ON users.id = student_applications.student_id
+            WHERE users.role = 'student'
+        `);
+
+        // Query for department-wise placement statistics
+        const [deptStats] = await db.query(`
+            SELECT 
+                department,
+                COUNT(*) AS total_students,
+                SUM(CASE WHEN placement_status = 'accepted' THEN 1 ELSE 0 END) AS placed_students
+            FROM users
+            WHERE role = 'student'
+            GROUP BY department
+        `);
+
+        res.json({
+            success: true,
+            placementStats,
+            deptStats
+        });
+    } catch (err) {
+        console.error('Error fetching placement officer dashboard data:', err);
+        res.status(500).json({ success: false, message: 'Failed to load dashboard data' });
+    }
+});
+app.get('/api/placement-status', authenticate(['student', 'mentor', 'placement_officer']), async (req, res) => {
+    try {
+        const { student_id } = req.query;
+
+        let query = `
+    SELECT 
+        sa.id,
+        u.full_name AS student_name,
+        u.roll_number,
+        u.department,
+        p.company_name,
+        sa.job_title,
+        sa.status,
+        sa.application_date,
+        sa.offer_date,
+        sa.salary,
+        sa.notes
+    FROM student_applications sa
+    JOIN users u ON sa.student_id = u.id
+    JOIN placements p ON sa.placement_id = p.id
+`;
+
+        const params = [];
+        if (student_id) {
+            query += ` WHERE sa.student_id = ?`;
+            params.push(student_id);
+        }
+
+        const [statuses] = await db.query(query, params);
+
+        res.json({ success: true, data: statuses });
+    } catch (err) {
+        console.error('Error fetching placement statuses:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch placement statuses' });
+    }
+});
+app.get('/api/placement-updates', authenticate(['student', 'mentor', 'placement_officer']), async (req, res) => {
+    try {
+        const [updates] = await db.query(`
+            SELECT p.*, u.username AS posted_by_name
+            FROM placements p
+            JOIN users u ON p.mentor_id = u.id
+            ORDER BY p.created_at DESC
+        `);
+
+        res.json({ success: true, data: updates });
+    } catch (err) {
+        console.error('Error fetching placement updates:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch placement updates' });
+    }
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
@@ -631,3 +899,4 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
