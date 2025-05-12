@@ -17,75 +17,108 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load dashboard data
     async function loadDashboardData() {
+    try {
+        // Load profile first to get user info
+        await loadProfile();
+        
+        // Fetch all data with proper error handling
+        let dashboardData = { taskStats: {}, studentStats: {} };
+        let tasksArray = [];
+        let updatesArray = [];
+        let studentsArray = [];
+
         try {
-            // Load profile first to get user info
-            await loadProfile();
-            
-            // Load all dashboard data
-            const [dashboardRes, tasksRes, updatesRes, studentsRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/dashboard/mentor', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }),
-                fetch('http://127.0.0.1:5000/api/tasks', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }),
-                fetch('http://127.0.0.1:5000/api/placement-updates', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }),
-                fetch('http://127.0.0.1:5000/api/students', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }).catch(err => {
-                    console.error('Failed to fetch students:', err);
-                    return { ok: false, status: 404 };
-                })
-            ]);
-            
-            console.log('Dashboard Response:', dashboardRes.status);
-            console.log('Tasks Response:', tasksRes.status);
-            console.log('Placement Updates Response:', updatesRes.status);
-            console.log('Students Response:', studentsRes.status);
+            const dashboardRes = await fetch('http://127.0.0.1:5000/api/dashboard/mentor', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            dashboardData = dashboardRes.ok ? await dashboardRes.json() : dashboardData;
+        } catch (dashboardError) {
+            console.error('Dashboard fetch error:', dashboardError);
+        }
 
-            if (!dashboardRes.ok || !tasksRes.ok || !updatesRes.ok || !studentsRes.ok) {
-                const dashboardError = await dashboardRes.text();
-                console.error('Dashboard error details:', dashboardError);
-                throw new Error(`Failed to load dashboard data: ${dashboardError}`);
+        try {
+            const tasksRes = await fetch('http://127.0.0.1:5000/api/tasks', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (tasksRes.ok) {
+                const tasksResult = await tasksRes.json();
+                tasksArray = tasksResult.tasks || tasksResult.data || [];
             }
-            
-            const dashboardData = await dashboardRes.json();
-            const tasksData = await tasksRes.json();
-            const updatesData = await updatesRes.json();
-            const studentsData = await studentsRes.json();
-            
-            console.log('Dashboard Data:', dashboardData);
-            console.log('Tasks Data:', tasksData);
-            console.log('Placement Updates Data:', updatesData);
-            console.log('Students Data:', studentsData);
+        } catch (tasksError) {
+            console.error('Tasks fetch error:', tasksError);
+        }
 
-            // Update stats
-            
-            document.getElementById('totalTasks').textContent = dashboardData.taskStats.total_tasks;
-            document.getElementById('completedTasks').textContent = dashboardData.taskStats.completed_tasks;
-            document.getElementById('totalStudents').textContent = dashboardData.studentStats.total_students;
-            document.getElementById('placedStudents').textContent = 
-                dashboardData.studentStats.students_with_placements > 0 ? 
-                Math.round((dashboardData.studentStats.students_with_placements / dashboardData.studentStats.total_students) * 100) + '%' : '0%';
-            
-            // Populate recent tasks table
-            const tasksArray = tasksData.tasks || tasksData.data || tasksData;
-            if (!Array.isArray(tasksData.tasks) || tasksData.tasks.length === 0) {
-                console.warn("No tasks found.");
-                return;
+        try {
+            const updatesRes = await fetch('http://127.0.0.1:5000/api/placement-updates', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (updatesRes.ok) {
+                const updatesResult = await updatesRes.json();
+                updatesArray = Array.isArray(updatesResult.data) ? updatesResult.data :
+               Array.isArray(updatesResult) ? updatesResult : [];
             }
+        } catch (updatesError) {
+            console.error('Updates fetch error:', updatesError);
+        }
+
+        try {
+            const studentsRes = await fetch('http://127.0.0.1:5000/api/students', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (studentsRes.ok) {
+                const studentsResult = await studentsRes.json();
+                studentsArray = studentsResult.data || studentsResult || [];
+            }
+        } catch (studentsError) {
+            console.error('Students fetch error:', studentsError);
+        }
+
+        // Update UI with proper fallbacks
+        const taskStats = dashboardData.taskStats || {};
+        const studentStats = dashboardData.studentStats || {};
+
+        document.getElementById('totalTasks').textContent = taskStats.total_tasks || 0;
+        document.getElementById('completedTasks').textContent = taskStats.completed_tasks || 0;
+        document.getElementById('totalStudents').textContent = studentStats.total_students || 0;
+        
+        const placedCount = studentStats.students_with_placements || 0;
+        const totalStudents = studentStats.total_students || 1; // Avoid division by zero
+        const placedPercentage = Math.round((placedCount / totalStudents) * 100);
+        document.getElementById('placedStudents').textContent = `${placedPercentage}%`;
+
+        // Populate recent tasks table
+        const recentTasksTable = document.getElementById('recentTasksTable')?.querySelector('tbody');
+        if (recentTasksTable) {
+            recentTasksTable.innerHTML = '';
             
-            const recentTasksTable = document.getElementById('recentTasksTable').querySelector('tbody');
+            if (tasksArray.length > 0) {
+                tasksArray.slice(0, 5).forEach(task => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.title}</td>
+                        <td>${task.assigned_count || 0} students</td>
+                        <td>${task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
+                        <td>
+                            <span class="badge ${task.status === 'completed' ? 'bg-success' : 
+                                task.status === 'in_progress' ? 'bg-info' : 'bg-warning text-dark'}">
+                                ${formatTaskStatus(task.status || 'pending')}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-task-btn" data-task-id="${task.id}">
+                                View
+                            </button>
+                        </td>
+                    `;
+                    recentTasksTable.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" class="text-center">No tasks found</td>';
+                recentTasksTable.appendChild(row);
+            }
+        }
+            
             recentTasksTable.innerHTML = '';
             if (Array.isArray(tasksArray) && tasksArray.length > 0) {
                 tasksArray.slice(0, 5).forEach(task => {
@@ -109,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     recentTasksTable.appendChild(row);
                 });
             } else {
-                console.warn("No tasks found in response:", tasksData);
+                console.warn("No tasks found in response:", tasksArray);
                 // Add a "no tasks" row
                 const row = document.createElement('tr');
                 row.innerHTML = '<td colspan="5" class="text-center">No tasks found</td>';
@@ -119,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const updatesList = document.getElementById('placementUpdatesList');
             updatesList.innerHTML = '';
             
-            updatesData.data.slice(0, 3).forEach(update => {
+            updatesArray.slice(0, 3).forEach(update => {
                 const updateItem = document.createElement('a');
                 updateItem.className = `list-group-item list-group-item-action ${update.is_important ? 'list-group-item-warning' : ''}`;
                 updateItem.innerHTML = `
@@ -135,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Create placement chart
-            createPlacementChart(studentsData);
+            createPlacementChart(studentsArray);
             
             // Load tasks for tasks tab
             loadTasks();
@@ -366,8 +399,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Populate placement updates table
             const updatesTable = document.getElementById('placementUpdatesTable').querySelector('tbody');
             updatesTable.innerHTML = '';
+            const updatesArray = Array.isArray(updates.data) ? updates.data : [];
             
-            updates.forEach(update => {
+            updatesArray.forEach(update => {
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
@@ -396,8 +430,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Populate placement status table
             const statusTable = document.getElementById('placementStatusTable').querySelector('tbody');
             statusTable.innerHTML = '';
-            
-            status.forEach(item => {
+            const statusArray = Array.isArray(status.data) ? status.data : [];
+            statusArray.forEach(item => {
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
@@ -454,8 +488,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const students = await response.json();
             const studentsTable = document.getElementById('studentsTable').querySelector('tbody');
             studentsTable.innerHTML = '';
+            const studentsArray = Array.isArray(students.data) ? students.data : [];
             
-            students.forEach(student => {
+            studentsArray.forEach(student => {
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
@@ -508,11 +543,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const meetings = await response.json();
             const meetingsTable = document.getElementById('meetingsTable').querySelector('tbody');
             meetingsTable.innerHTML = '';
-            
+            const meetingsArray = Array.isArray(meetings.data) ? meetings.data : [];
             const now = new Date();
-            const filteredMeetings = filter === 'all' ? meetings : 
-                                    filter === 'upcoming' ? meetings.filter(m => new Date(m.scheduled_time) > now) :
-                                    meetings.filter(m => new Date(m.scheduled_time) <= now);
+            const filteredMeetings = filter === 'all' ? meetingsArray : 
+                filter === 'upcoming' ? meetingsArray.filter(m => new Date(m.scheduled_time) > now) :
+                meetingsArray.filter(m => new Date(m.scheduled_time) <= now);
             
             filteredMeetings.forEach(meeting => {
                 const row = document.createElement('tr');
@@ -685,9 +720,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveTaskBtn').addEventListener('click', async function() {
         const title = document.getElementById('taskTitle').value;
         const description = document.getElementById('taskDescription').value;
-        const deadline = document.getElementById('taskDeadline').value;
-        const studentIds = Array.from(document.getElementById('taskStudents').selectedOptions).map(opt => opt.value);
-        
+        const deadline = new Date(document.getElementById('taskDeadline').value).toISOString(); // convert to ISO
+        const studentIds = Array.from(document.getElementById('taskStudents').selectedOptions)
+                            .map(opt => parseInt(opt.value, 10));
+        console.log('Sending payload:', {
+        title,
+        description,
+        deadline,
+        student_ids: studentIds
+    });
         try {
             const response = await fetch('http://127.0.0.1:5000/api/tasks', {
                 method: 'POST',
@@ -704,7 +745,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (!response.ok) {
-                throw new Error('Failed to create task');
+                const errorText = await response.text(); // helpful for debugging
+                throw new Error(`Failed to create task: ${errorText}`);
             }
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
@@ -976,6 +1018,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const { data: students } = await response.json();
+            if (!students || students.length === 0) {
+                alert("No students found for assignment");
+                return;
+            }
             const studentsSelect = document.getElementById('taskStudents');
             studentsSelect.innerHTML = '';
             
