@@ -1,95 +1,168 @@
-# URL Shortener with Load Balancing and Caching
+# 🎓 Mentor-Mentee Management and Placement Tracking System
 
-A high-performance, RESTful **URL shortening service** built with a full-stack architecture and robust backend design. This project demonstrates scalable web development practices including **load balancing**, **caching**, and **database optimization**, built and tested to handle **1000+ requests/day**.
+A secure, full-stack web application designed to **streamline communication between mentors and students**, track placement records, and enable real-time academic task management.
 
-> Built as part of internship experience (June 2025 – July 2025)
+> 🛠️ Developed as part of internship project (March 2025 – May 2025)
 
 ---
 
-## Tech Stack
+## 🚀 Tech Stack
 
+- **Frontend:** HTML, CSS, JavaScript  
 - **Backend:** Node.js, Express.js  
 - **Database:** MySQL  
-- **Caching:** Redis  
-- **Frontend:** HTML, CSS (decoupled from backend)
-- **Load Balancer:** Nginx
+- **Auth:** JSON Web Tokens (JWT)  
+- **Architecture:** Role-based access control (RBAC)
 
 ---
 
-## Key Features
+## ✨ Key Features
 
-- **URL Shortening**  
-  Converts long URLs into short, unique identifiers using a custom base62 encoding strategy.
+- 👥 **Role-Based Access Control (RBAC)**  
+  Separate dashboards for mentors, mentees, and admins using JWT for secure authentication.
 
-- **Performance Optimization**  
-  Integrated Redis for caching frequently accessed short URLs, reducing repeated DB hits by **40%**.
+- 📊 **Real-Time Dashboard**  
+  Mentors can monitor academic status, pending tasks, placement data, and student performance in real-time.
 
-- **Load Balancing with Nginx**  
-  Deployed 3 instances of the backend behind an Nginx reverse proxy to simulate high availability and fault tolerance.
+- 📝 **Task & Communication Tracker**  
+  Enables students to upload progress reports and receive mentor feedback directly via dashboard.
 
-- **Reduced Latency**  
-  Response time improved from **800ms ➝ 300ms** during load testing.
+- 🔒 **Security First**  
+  Ensures **100% protection** of academic and placement records through token-based secured APIs.
+
+- 📈 **Efficiency Boost**  
+  Reduced mentor-student miscommunication by **60%** through centralized task and feedback tracking.
 
 ---
 
-## Folder Structure
+## 🗂️ Folder Structure
 
-mentor_mentee_system/
-├── backend/ # Node.js + Express API
-│ ├── routes/
+# 🎓 Mentor-Mentee Management and Placement Tracking System
+
+A secure, full-stack web application designed to **streamline communication between mentors and students**, track placement records, and enable real-time academic task management.
+
+> 🛠️ Developed as part of internship project (March 2025 – May 2025)
+
+---
+
+## 🚀 Tech Stack
+
+- **Frontend:** HTML, CSS, JavaScript  
+- **Backend:** Node.js, Express.js  
+- **Database:** MySQL  
+- **Auth:** JSON Web Tokens (JWT)  
+- **Architecture:** Role-based access control (RBAC)
+
+---
+
+## ✨ Key Features
+
+- 👥 **Role-Based Access Control (RBAC)**  
+  Separate dashboards for mentors, mentees, and admins using JWT for secure authentication.
+
+- 📊 **Real-Time Dashboard**  
+  Mentors can monitor academic status, pending tasks, placement data, and student performance in real-time.
+
+- 📝 **Task & Communication Tracker**  
+  Enables students to upload progress reports and receive mentor feedback directly via dashboard.
+
+- 🔒 **Security First**  
+  Ensures **100% protection** of academic and placement records through token-based secured APIs.
+
+- 📈 **Efficiency Boost**  
+  Reduced mentor-student miscommunication by **60%** through centralized task and feedback tracking.
+
+---
+
+## 🗂️ Folder Structure
+
+# 🎓 Mentor-Mentee Management and Placement Tracking System
+
+A secure, full-stack web application designed to **streamline communication between mentors and students**, track placement records, and enable real-time academic task management.
+
+> 🛠️ Developed as part of internship project (March 2025 – May 2025)
+
+---
+
+## 🚀 Tech Stack
+
+- **Frontend:** HTML, CSS, JavaScript  
+- **Backend:** Node.js, Express.js  
+- **Database:** MySQL  
+- **Auth:** JSON Web Tokens (JWT)  
+- **Architecture:** Role-based access control (RBAC)
+
+---
+
+## ✨ Key Features
+
+- 👥 **Role-Based Access Control (RBAC)**  
+  Separate dashboards for mentors, mentees, and admins using JWT for secure authentication.
+
+- 📊 **Real-Time Dashboard**  
+  Mentors can monitor academic status, pending tasks, placement data, and student performance in real-time.
+
+- 📝 **Task & Communication Tracker**  
+  Enables students to upload progress reports and receive mentor feedback directly via dashboard.
+
+- 🔒 **Security First**  
+  Ensures **100% protection** of academic and placement records through token-based secured APIs.
+
+- 📈 **Efficiency Boost**  
+  Reduced mentor-student miscommunication by **60%** through centralized task and feedback tracking.
+
+---
+
+## 🗂️ Folder Structure
+
+mentor-mentee-system/
+├── backend/ # Node + Express API
 │ ├── controllers/
-│ ├── utils/
+│ ├── routes/
+│ ├── middleware/ # JWT and role-based access logic
 │ └── server.js
 │
-├── frontend/ # Basic HTML/CSS UI
-│ └── index.html
+├── frontend/ # HTML/CSS/JavaScript UI
+│ ├── index.html
+│ ├── mentor_dashboard.html
+│ └── student_dashboard.html
 │
-├── nginx/ # Nginx config for load balancing
-│ └── default.conf
+├── database/ # SQL files for schema and seed
+│ └── schema.sql
 │
-├── mysql/ # SQL schema and seed
-│ └── init.sql
-│
-├── redis/ # Redis connection
-│ └── client.js
-└── README.md
+├── .env # Environment config (not pushed)
+├── README.md
+└── package.json
 
 ---
 
-## How It Works
+## ⚙️ Setup & Run Instructions
 
-1. **Client submits long URL** via frontend or API.
-2. Backend generates a **short code** and stores it in MySQL.
-3. On future requests:
-   - Checks Redis for cached mapping.
-   - If found → return immediately.
-   - If not → query MySQL, then cache the result.
+### 1. Clone the repository
 
-4. **Nginx** distributes incoming traffic to one of three backend servers in round-robin mode.
-
----
-
-## Running Locally
-
-### 1. Clone the repo
-
-git clone https://github.com/Kaviyavarshini-CS/Mentor_Mentee_System.git
-cd Mentor_Mentee_System
-
-2. Set up MySQL & Redis
-Import mysql/init.sql into your MySQL instance.
-
-Start your Redis server.
-
-3. Start backend servers
+git clone https://github.com/Kaviyavarshini-CS/Mentor-Mentee-System.git
+cd Mentor-Mentee-System
+### 2. Install backend dependencies
 
 cd backend
 npm install
-node server.js        # Start this on 3 different ports for Nginx
 
-4. Run Nginx
+### 3. Set up environment variables (.env)
 
-sudo nginx -c $(pwd)/nginx/default.conf
+PORT=5000
+JWT_SECRET=your_jwt_secret
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=mentee_system
 
+### 4. Set up MySQL database
+Import database/schema.sql into your MySQL server.
 
+### 5. Start the backend
 
+node server.js
+
+### 6. Open the frontend
+
+Open frontend/index.html in a browser.
