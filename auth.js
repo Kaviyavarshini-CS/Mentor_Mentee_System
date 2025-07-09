@@ -67,6 +67,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('registerConfirmPassword').value;
+
     
     if (password !== confirmPassword) {
         alert('Passwords do not match');
@@ -87,6 +88,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
         registrationData.roll_number = document.getElementById('registerRollNumber').value;
         registrationData.department = document.getElementById('registerDepartment').value;
         registrationData.batch_year = document.getElementById('registerBatchYear').value;
+        registrationData.mentor_id = document.getElementById('registerMentorId').value;
     } else if (role === 'mentor') {
         registrationData.department = document.getElementById('registerMentorDepartment').value;
         registrationData.designation = document.getElementById('registerDesignation').value;

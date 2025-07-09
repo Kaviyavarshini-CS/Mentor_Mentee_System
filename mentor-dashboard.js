@@ -77,9 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const taskStats = dashboardData.taskStats || {};
         const studentStats = dashboardData.studentStats || {};
 
-        document.getElementById('totalTasks').textContent = taskStats.total_tasks || 0;
+        document.getElementById('totalTasks').textContent = tasksArray.length || 0;
         document.getElementById('completedTasks').textContent = taskStats.completed_tasks || 0;
-        document.getElementById('totalStudents').textContent = studentStats.total_students || 0;
+        document.getElementById('totalStudents').textContent = studentsArray.length || 0;
         
         const placedCount = studentStats.students_with_placements || 0;
         const totalStudents = studentStats.total_students || 1; // Avoid division by zero
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td>
                             <span class="badge ${task.status === 'completed' ? 'bg-success' : 
                                 task.status === 'in_progress' ? 'bg-info' : 'bg-warning text-dark'}">
-                                ${formatTaskStatus(task.status || 'pending')}
+                                ${(task.status || 'pending')}
                             </span>
                         </td>
                         <td>
@@ -236,36 +236,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Load profile data
-    async function loadProfile() {
-        try {
-            const response = await fetch('http://127.0.0.1:5000/api/profile', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to load profile');
+async function loadProfile() {
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/profile', {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
-            
-            const data = await response.json();
-            currentUser = data;
-            
-            // Populate profile form
-            document.getElementById('profileFullName').value = data.full_name;
-            document.getElementById('profileEmail').value = data.email;
-            
-            if (data.mentor_info) {
-                document.getElementById('profileDepartment').value = data.mentor_info.department;
-                document.getElementById('profileDesignation').value = data.mentor_info.designation;
-                document.getElementById('profileSpecialization').value = data.mentor_info.specialization || '';
-            }
-            
-        } catch (err) {
-            console.error('Error loading profile:', err);
-            alert('Failed to load profile data');
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load profile');
         }
+
+        const json = await response.json();
+
+        if (!json.success) {
+            throw new Error(json.message || 'Profile loading failed');
+        }
+
+        const data = json.data;
+        currentUser = data;
+
+        // Populate profile form
+        document.getElementById('profileFullName').value = data.full_name || '';
+        document.getElementById('profileEmail').value = data.email || '';
+
+        // Only for mentors
+        if (data.role === 'mentor') {
+            document.getElementById('profileDepartment').value = data.department || '';
+            document.getElementById('profileDesignation').value = data.designation || '';
+            document.getElementById('profileSpecialization').value = data.specialization || '';
+        }
+
+        // You can optionally handle student-specific fields here too
+
+    } catch (err) {
+        console.error('Error loading profile:', err);
+        alert('Failed to load profile data');
     }
+}
+
     
     // Load tasks
     async function loadTasks(filter = 'all') {
@@ -720,7 +730,21 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveTaskBtn').addEventListener('click', async function() {
         const title = document.getElementById('taskTitle').value;
         const description = document.getElementById('taskDescription').value;
-        const deadline = new Date(document.getElementById('taskDeadline').value).toISOString(); // convert to ISO
+        //const deadline = new Date(document.getElementById('taskDeadline').value).toISOString(); // convert to ISO
+        const formatDate = (date) => {
+        const pad = (n) => n.toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1); // getMonth() is zero-based
+        const day = pad(date.getDate());
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        };
+        const deadline_unformat = new Date(document.getElementById('taskDeadline').value); // convert to ISO
+        const deadline = formatDate(deadline_unformat);
+        console.log(deadline);  
         const studentIds = Array.from(document.getElementById('taskStudents').selectedOptions)
                             .map(opt => parseInt(opt.value, 10));
         console.log('Sending payload:', {
@@ -766,58 +790,57 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Post placement update
-    document.getElementById('saveUpdateBtn').addEventListener('click', async function() {
-        const title = document.getElementById('updateTitle').value;
-        const description = document.getElementById('updateDescription').value;
-        const link = document.getElementById('updateLink').value;
-        const isImportant = document.getElementById('updateImportant').checked;
-        
-        try {
-            // In your frontend code where you post updates:
-                const isImportant = document.getElementById('updateImportant').checked;
-                const response = await fetch('http://127.0.0.1:5000/api/placement-updates', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    title,
-                    description,
-                    link,
-                    is_important: isImportant
-                })
-            });
-            if (!response.ok) {
-                throw new Error('Failed to post placement update');
-            }
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addPlacementUpdateModal'));
-            modal.hide();
-            
-            // Reset form
-            document.getElementById('placementUpdateForm').reset();
-            
-            // Reload placement data
-            loadPlacementData();
-            loadDashboardData();
-            
-        } catch (err) {
-            console.error('Error posting placement update:', err);
-            alert('Failed to post placement update');
+   document.getElementById('saveUpdateBtn').addEventListener('click', async function () {
+    const title = document.getElementById('updateTitle').value;
+    const description = document.getElementById('updateDescription').value;
+    const application_link = document.getElementById('updateLink').value;
+    const is_important = document.getElementById('updateImportant').checked;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/placement-updates', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title,
+                description,
+                application_link,
+                is_important
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to post placement update');
         }
-    });
-    
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addPlacementUpdateModal'));
+        modal.hide();
+
+        document.getElementById('placementUpdateForm').reset();
+        loadPlacementData();
+        loadDashboardData();
+    } catch (err) {
+        console.error('Error posting placement update:', err);
+        alert('Failed to post placement update');
+    }
+});
+
     // Add placement status
     document.getElementById('savePlacementStatusBtn').addEventListener('click', async function() {
         const studentId = document.getElementById('placementStudent').value;
-        const company = document.getElementById('placementCompany').value;
+        const placementId = document.getElementById('placementCompany').value;
         const jobTitle = document.getElementById('placementJobTitle').value;
         const status = document.getElementById('placementStatus').value;
         const applicationDate = document.getElementById('placementApplicationDate').value;
         const offerDate = document.getElementById('placementOfferDate').value;
         const salary = document.getElementById('placementSalary').value;
         const notes = document.getElementById('placementNotes').value;
+        const statusCounts = {
+            placed: 0,
+            unplaced: 0
+        };
         
         try {
             const response = await fetch('http://127.0.0.1:5000/api/placement-status', {
@@ -826,16 +849,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    student_id: studentId,
-                    company_name: company,
-                    job_title: jobTitle,
-                    status,
-                    application_date: applicationDate || null,
-                    offer_date: offerDate || null,
-                    salary: salary ? parseFloat(salary) : null,
-                    notes
-                })
+               body: JSON.stringify({
+                student_id: currentUser.id,
+                placement_id: placementId,
+                job_title: jobTitle,
+                status,
+                application_date: applicationDate || null,
+                offer_date: offerDate || null,
+                salary: salary ? parseFloat(salary) : null,
+                notes
+            })
             });
             
             if (!response.ok) {
@@ -1088,8 +1111,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Failed to load participants');
             }
             
-            const students = await studentsRes.json();
-            const mentors = await mentorsRes.json();
+            const studentsData = await studentsRes.json();
+            const mentorsData = await mentorsRes.json();
+
+            const students = Array.isArray(studentsData) ? studentsData : studentsData.data;
+            const mentors = Array.isArray(mentorsData) ? mentorsData : mentorsData.data;
+
             const participantsSelect = document.getElementById('meetingParticipants');
             participantsSelect.innerHTML = '';
             

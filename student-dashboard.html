@@ -64,8 +64,8 @@
                             <div class="col-md-3">
                                 <div class="card stat-card">
                                     <div class="card-body">
-                                        <div class="stat-value" id="totalTasks">0</div>
-                                        <div class="stat-label">Total Tasks</div>
+                                        <div class="stat-value" id="totalTasks">6</div>
+                                        <div class="stat-label">Total Tasks </div>
                                     </div>
                                 </div>
                             </div>
@@ -80,7 +80,7 @@
                             <div class="col-md-3">
                                 <div class="card stat-card">
                                     <div class="card-body">
-                                        <div class="stat-value" id="applications">0</div>
+                                        <div class="stat-value" id="applications">1</div>
                                         <div class="stat-label">Applications</div>
                                     </div>
                                 </div>
@@ -375,8 +375,11 @@
                 <div class="modal-body">
                     <form id="placementStatusForm">
                         <div class="mb-3">
-                            <label for="placementCompany" class="form-label">Company Name</label>
-                            <input type="text" class="form-control" id="placementCompany" required>
+                            <label for="placementId" class="form-label">Company</label>
+                            <select class="form-select" id="placementId" required>
+                                <option value="">Select Company</option>
+                                <!-- Options will be populated dynamically -->
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label for="placementJobTitle" class="form-label">Job Title</label>

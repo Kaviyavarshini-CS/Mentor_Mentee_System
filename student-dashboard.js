@@ -391,6 +391,34 @@ async function loadPlacementData() {
     }
 }
 
+
+async function loadPlacementDropdown() {
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/placements', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Failed to load placements');
+
+        const data = await response.json();
+
+        const placementSelect = document.getElementById('placementId');
+        placementSelect.innerHTML = '<option value="">Select Company</option>'; // Reset
+
+        data.placements.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.placement_id;
+            option.textContent = p.company_name;
+            placementSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading placements:', error);
+        alert('Failed to load placement list');
+    }
+}
+
 // Open task status modal
 async function openTaskStatusModal(taskId) {
     try {
@@ -423,7 +451,7 @@ async function openTaskStatusModal(taskId) {
 // Open meeting attendance modal
 async function openMeetingAttendanceModal(meetingId) {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
+        const response = await fetch(`http://127.0.0.1:5000/api/meetings/`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -487,7 +515,7 @@ document.getElementById('saveAttendanceStatus').addEventListener('click', async 
     const status = document.getElementById('attendanceStatus').value;
     
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}/attendance`, {
+        const response = await fetch(`http://127.0.0.1:5000/api/meetings/attendance`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -513,9 +541,25 @@ document.getElementById('saveAttendanceStatus').addEventListener('click', async 
     }
 });
 
+
+// Call this when the modal is shown
+document.getElementById('addPlacementModal').addEventListener('show.bs.modal', async () => {
+    try {
+        const response = await fetch('/api/placements', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const placements = await response.json();
+        
+        const select = document.getElementById('placementSelect');
+        select.innerHTML = '<option value="">Select a company</option>' + 
+            placements.map(p => `<option value="${p.id}">${p.company_name}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading placements:', err);
+    }
+});
 // Save placement status
 document.getElementById('savePlacementStatus').addEventListener('click', async function() {
-    const company = document.getElementById('placementCompany').value;
+    const placementId = document.getElementById('placementId').value;
     const jobTitle = document.getElementById('placementJobTitle').value;
     const status = document.getElementById('placementStatus').value;
     const applicationDate = document.getElementById('placementApplicationDate').value;
@@ -532,7 +576,7 @@ document.getElementById('savePlacementStatus').addEventListener('click', async f
             },
             body: JSON.stringify({
                 student_id: currentUser.id,
-                company_name: company,
+                placement_id: parseInt(placementId),
                 job_title: jobTitle,
                 status,
                 application_date: applicationDate || null,

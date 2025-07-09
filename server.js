@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
 // Middleware
 app.use(cors({
     origin: 'http://127.0.0.1:5500',
@@ -118,8 +119,8 @@ app.get('/api/health', (req, res) => {
 // User Registration
 app.post('/api/register', async (req, res) => {
     try {
-        const { username, email, password, role, full_name, department, roll_number } = req.body;
-        
+        const { username, email, password, role, full_name, department, roll_number, batch_year, mentor_id, designation, specialization } = req.body;
+
         // Validate required fields
         if (!username || !email || !password || !role) {
             return res.status(400).json({ 
@@ -128,7 +129,6 @@ app.post('/api/register', async (req, res) => {
             });
         }
 
-        // Validate role
         const validRoles = ['student', 'mentor', 'placement_officer'];
         if (!validRoles.includes(role)) {
             return res.status(400).json({ 
@@ -154,26 +154,49 @@ app.post('/api/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user
-        const [result] = await db.query(
-            'INSERT INTO users (username, email, password, role, full_name, department, roll_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, role, full_name || null, department || null, roll_number || null]
-        );
+        let query, values;
 
-        res.status(201).json({ 
-            success: true,
-            message: 'User registered successfully',
-            data: {
-                id: result.insertId,
+        if (role === 'mentor') {
+            query = `
+                INSERT INTO users (username, email, password, role, full_name, department, designation, specialization)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            values = [username, email, hashedPassword, role, full_name || null, department || null, designation || null, specialization || null];
+        } else if (role === 'student') {
+            query = `
+                INSERT INTO users (username, email, password, role, full_name, department, roll_number, batch_year, mentor_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            values = [
                 username,
                 email,
+                hashedPassword,
                 role,
-                department,
-                roll_number
-            }
-        });
-    } catch (err) {
-        console.error('Registration error:', err);
+                full_name || null,
+                department || null,
+                roll_number || null,
+                batch_year || null,
+                mentor_id || null];
+                }
+
+                const [result] = await db.query(query, values);
+
+                res.status(201).json({ 
+                    success: true,
+                    message: 'User registered successfully',
+                    data: {
+                        id: result.insertId,
+                        username,
+                        email,
+                        role,
+                        department,
+                        roll_number,
+                        designation,
+                        specialization
+                    }
+                });
+        } catch (err) {
+            console.error('Registration error:', err);
         
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ 
@@ -189,6 +212,7 @@ app.post('/api/register', async (req, res) => {
         });
     }
 });
+
 
 // User Login
 app.post('/api/login', async (req, res) => {
@@ -256,12 +280,17 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/profile', authenticate(), async (req, res) => {
     try {
         const userId = req.user.id;
-        
+
+        // Get all profile info from 'users' table
         const [users] = await db.query(
-            'SELECT id, username, email, role, full_name, created_at FROM users WHERE id = ?', 
+            `SELECT id, username, email, role, full_name, department, 
+                    roll_number, batch_year, current_cgpa, placement_status, 
+                    mentor_id, designation, specialization, created_at 
+             FROM users 
+             WHERE id = ?`, 
             [userId]
         );
-        
+
         if (!users.length) {
             return res.status(404).json({ 
                 success: false, 
@@ -269,10 +298,13 @@ app.get('/api/profile', authenticate(), async (req, res) => {
             });
         }
 
-        res.json({ 
+        const user = users[0];
+
+        res.json({
             success: true,
-            data: users[0]
+            data: user
         });
+
     } catch (err) {
         console.error('Profile error:', err);
         res.status(500).json({ 
@@ -283,13 +315,73 @@ app.get('/api/profile', authenticate(), async (req, res) => {
     }
 });
 
+//change passwords
+// Change password route
+app.post('/api/change-password', authenticate(), async (req, res) => {
+    try {
+        const { current_password, new_password } = req.body;
+
+        // Ensure new passwords meet security requirements (e.g., length, complexity)
+        if (new_password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password must be at least 6 characters long'
+            });
+        }
+
+        // Get the user details from the database using the authenticated user's ID
+        const userId = req.user.id;
+
+        const [users] = await db.query('SELECT id, password FROM users WHERE id = ?', [userId]);
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const user = users[0];
+
+        // Verify the current password matches the stored password
+        const isCurrentPasswordValid = await bcrypt.compare(current_password, user.password);
+        
+        if (!isCurrentPasswordValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Current password is incorrect'
+            });
+        }
+
+        // Hash the new password
+        const hashedNewPassword = await bcrypt.hash(new_password, 10);
+
+        // Update the user's password in the database
+        await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedNewPassword, userId]);
+
+        // Respond with success
+        res.json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+
+    } catch (err) {
+        console.error('Error changing password:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to change password',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+
 // Task Management Endpoints
 // Create task (Mentor only)
 app.post('/api/tasks', authenticate(['mentor']), async (req, res) => {
     try {
         const { title, description, deadline, student_ids } = req.body; // ✅ Use student_ids (array)
         const mentor_id = req.user.id;
-
         // Validate input
         if (!title || !description || !deadline || !Array.isArray(student_ids) || student_ids.length === 0) {
             return res.status(400).json({
@@ -311,7 +403,7 @@ app.post('/api/tasks', authenticate(['mentor']), async (req, res) => {
 
             // Insert into tasks table (if needed: you can de-dupe by title/deadline if desired)
             const [result] = await db.query(
-                'INSERT INTO tasks (title, description, mentor_id, student_id, due_date) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO tasks (title, description, mentor_id, student_id, deadline) VALUES (?, ?, ?, ?, ?)',
                 [title, description, mentor_id, student_id, deadline]
             );
 
@@ -342,7 +434,7 @@ app.post('/api/tasks', authenticate(['mentor']), async (req, res) => {
 });
 
 // Get tasks for current mentor
-app.get('/api/tasks', authenticate(['mentor']), async (req, res) => {
+app.get('/api/tasks', authenticate(['mentor','student']), async (req, res) => {
     try {
         const mentor_id = req.user.id;
 
@@ -527,21 +619,40 @@ app.get('/api/dashboard/student', authenticate(['student', 'placement_officer'])
 // Placement Endpoints
 // Get all placement updates
 app.post('/api/placement-updates', authenticate(['mentor', 'placement_officer']), async (req, res) => {
-    const { title, description, link, is_important } = req.body;
-    const mentorId = req.user.id; // Assuming authenticate middleware sets req.user
-
     try {
-        await db.query(`
-            INSERT INTO placements (mentor_id, title, description, link, is_important, created_at)
-            VALUES (?, ?, ?, ?, ?, NOW())
-        `, [mentorId, title, description, link, is_important]);
+        const { title, description, application_link, is_important = false } = req.body;
+        const mentor_id = req.user.id;
 
-        res.status(201).json({ success: true, message: 'Placement update posted successfully' });
+        // Validate required fields
+        if (!title || !description || !application_link) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields' 
+            });
+        }
+
+        const [result] = await db.query(
+            'INSERT INTO placements (mentor_id, title, description, application_link, is_important, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [mentor_id, title, description, application_link, is_important]
+        );
+
+        res.status(201).json({ 
+            success: true,
+            message: 'Placement opportunity created successfully',
+            data: {
+                placement_id: result.insertId
+            }
+        });
     } catch (err) {
-        console.error('Error posting placement update:', err);
-        res.status(500).json({ success: false, message: 'Failed to post placement update' });
+        console.error('Create placement error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to create placement opportunity',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
+
 
 // Get all students for a mentor
 app.get('/api/students', authenticate(['mentor']), async (req, res) => {
@@ -553,7 +664,7 @@ app.get('/api/students', authenticate(['mentor']), async (req, res) => {
         const [students] = await db.query(`
             SELECT id AS user_id, username, full_name, email, roll_number, department, placement_status, created_at
             FROM users
-            where role = 'student'
+            where role = 'student' and mentor_id = ?
             ORDER BY created_at DESC;
         `, [mentorId]);
 
@@ -566,20 +677,33 @@ app.get('/api/students', authenticate(['mentor']), async (req, res) => {
     }
 });
 
+app.get('/api/mentors', authenticate(['admin', 'placement_officer', 'mentor']), async (req, res) => {
+    try {
+        const [mentors] = await db.query(
+            "SELECT id AS user_id, full_name, email, department, designation, specialization FROM users WHERE role = 'mentor'"
+        );
+
+        res.json(mentors);
+    } catch (err) {
+        console.error('Error fetching mentors:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch mentors' });
+    }
+});
+
 // Create placement opportunity (Mentor or Placement Officer)
 app.post('/api/placements', authenticate(['mentor', 'placement_officer']), async (req, res) => {
     try {
-        // Modified to accept either format
+        // Destructure the request body
         const { 
-            company_name = req.body.title,  // Fallback to title if company_name not provided
-            position = 'Update',            // Default position
-            description = req.body.description,
-            application_link = req.body.link,
-            due_date = new Date().toISOString()  // Default to now
+            title, 
+            description, 
+            link, // or application_link if that's your column name
+            is_important = false 
         } = req.body;
 
         const mentor_id = req.user.id;
 
+        // Check for required fields
         if (!company_name || !description) {
             return res.status(400).json({ 
                 success: false, 
@@ -587,9 +711,10 @@ app.post('/api/placements', authenticate(['mentor', 'placement_officer']), async
             });
         }
 
+        // Insert the placement record into the database
         const [result] = await db.query(
-            'INSERT INTO placements (company_name, position, description, mentor_id, application_link, due_date) VALUES (?, ?, ?, ?, ?, ?)',
-            [company_name, position, description, mentor_id, application_link, due_date]
+            'INSERT INTO placements (mentor_id, title, description, application_link, is_important, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [mentor_id, title, description, link || null, is_important] // Use application_link
         );
 
         res.status(201).json({ 
@@ -690,6 +815,46 @@ app.post('/api/placements/:id/apply', authenticate(['student']), async (req, res
         });
     }
 });
+app.post('/api/placement-status', authenticate(['mentor', 'placement_officer', 'student']), async (req, res) => {
+    const {
+        student_id,
+        placement_id,
+        job_title,
+        status,
+        application_date,
+        offer_date,
+        salary,
+        notes
+    } = req.body;
+
+    // Basic validation
+    if (!student_id || !placement_id || !status) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    try {
+        const [result] = await db.query(
+            `INSERT INTO student_applications 
+            (student_id, placement_id, job_title, status, application_date, offer_date, salary, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                student_id,
+                placement_id,
+                job_title || null,
+                status,
+                application_date || null,
+                offer_date || null,
+                salary || null,
+                notes || null
+            ]
+        );
+
+        res.json({ success: true, message: 'Placement status added', id: result.insertId });
+    } catch (err) {
+        console.error('Error adding placement status:', err);
+        res.status(500).json({ success: false, message: 'Failed to add placement status' });
+    }
+});
 
 //Placement status
 app.get('/api/placement-status', authenticate(['student', 'mentor', 'placement_officer']), async (req, res) => {
@@ -702,7 +867,7 @@ app.get('/api/placement-status', authenticate(['student', 'mentor', 'placement_o
         u.full_name AS student_name,
         u.roll_number,
         u.department,
-        p.company_name,
+        p.title,
         sa.job_title,
         sa.status,
         sa.application_date,
@@ -729,6 +894,24 @@ app.get('/api/placement-status', authenticate(['student', 'mentor', 'placement_o
     }
 });
 
+// DELETE a placement (opportunity/post) by ID
+app.delete('/api/placement-status/:id', authenticate(['mentor', 'placement_officer']), async (req, res) => {
+    const placementId = req.params.id;
+
+    try {
+        const [result] = await db.query('DELETE FROM placements WHERE id = ?', [placementId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Placement not found' });
+        }
+
+        res.json({ success: true, message: 'Placement deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting placement:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete placement' });
+    }
+});
+
 //Placement Updates
 app.get('/api/placement-updates', authenticate(['student', 'mentor', 'placement_officer']), async (req, res) => {
     try {
@@ -746,6 +929,22 @@ app.get('/api/placement-updates', authenticate(['student', 'mentor', 'placement_
     }
 });
 
+app.delete('/api/placement-updates/:id', authenticate(['mentor', 'placement_officer']), async (req, res) => {
+    const updateId = req.params.id;
+
+    try {
+        const [result] = await db.query('DELETE FROM placements WHERE id = ?', [updateId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Placement update not found' });
+        }
+
+        res.json({ success: true, message: 'Placement update deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting placement update:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete placement update' });
+    }
+});
 // Get my applications (Student only)
 app.get('/api/my-applications', authenticate(['student']), async (req, res) => {
     try {
@@ -865,6 +1064,89 @@ app.get('/api/meetings', authenticate(['student', 'mentor']), async (req, res) =
     } catch (err) {
         console.error('Error fetching meetings:', err);
         res.status(500).json({ success: false, message: 'Failed to fetch meetings' });
+    }
+});
+
+app.post('/api/meetings', authenticate(['mentor', 'placement_officer']), async (req, res) => {
+    try {
+        const {
+            title,
+            description,
+            scheduled_time,
+            duration_minutes,
+            teams_meeting_link,
+            participant_ids
+        } = req.body;
+
+        const organizer_id = req.user.id;  // Assuming `req.user.id` is the logged-in user (mentor or placement officer)
+
+        // Validate required fields
+        if (!title || !scheduled_time || !participant_ids || participant_ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: title, scheduled time, or participants.'
+            });
+        }
+
+        // Insert the meeting into the database
+        const [result] = await db.query(
+            'INSERT INTO meetings (organizer_id, title, description, scheduled_time, duration_minutes, teams_meeting_link) VALUES (?, ?, ?, ?, ?, ?)',
+            [organizer_id, title, description || null, scheduled_time, duration_minutes || null, teams_meeting_link || null]
+        );
+
+        const meeting_id = result.insertId;
+
+        // Now insert the meeting participants into the meeting_participants table
+        const participantValues = participant_ids.map(participant_id => [meeting_id, participant_id]);
+        if (participantValues.length > 0) {
+            await db.query(
+                'INSERT INTO meeting_participants (meeting_id, participant_id) VALUES ?',
+                [participantValues]
+            );
+        }
+
+        // Respond with success
+        res.status(201).json({
+            success: true,
+            message: 'Meeting scheduled successfully',
+            data: {
+                meeting_id: meeting_id
+            }
+        });
+    } catch (err) {
+        console.error('Error scheduling meeting:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to schedule meeting',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+app.put('/api/meetings/attendance', authenticate(['student', 'mentor']), async (req, res) => {
+    const { meetingId, status } = req.body;
+    const participantId = req.user.id; // assuming user ID from JWT
+
+    if (!['attending', 'declined', 'pending'].includes(status)) {
+        return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    try {
+        const [result] = await db.query(
+            `UPDATE meeting_participants 
+             SET attendance_status = ? 
+             WHERE meeting_id = ? AND participant_id = ?`,
+            [status, meetingId, participantId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Record not found' });
+        }
+
+        res.json({ success: true, message: 'Attendance updated successfully' });
+    } catch (err) {
+        console.error('Error updating attendance:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 
