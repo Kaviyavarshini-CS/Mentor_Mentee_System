@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let studentsArray = [];
 
         try {
-            const dashboardRes = await fetch('http://127.0.0.1:5000/api/dashboard/mentor', {
+            const dashboardRes = await fetch('http://140.245.241.117/api/dashboard/mentor', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             dashboardData = dashboardRes.ok ? await dashboardRes.json() : dashboardData;
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const tasksRes = await fetch('http://127.0.0.1:5000/api/tasks', {
+            const tasksRes = await fetch('http://140.245.241.117/api/tasks', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (tasksRes.ok) {
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const updatesRes = await fetch('http://127.0.0.1:5000/api/placement-updates', {
+            const updatesRes = await fetch('http://140.245.241.117/api/placement-updates', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (updatesRes.ok) {
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const studentsRes = await fetch('http://127.0.0.1:5000/api/students', {
+            const studentsRes = await fetch('http://140.245.241.117/api/students', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (studentsRes.ok) {
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load profile data
 async function loadProfile() {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/profile', {
+        const response = await fetch('http://140.245.241.117/api/profile', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -280,7 +280,7 @@ async function loadProfile() {
     // Load tasks
     async function loadTasks(filter = 'all') {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/tasks', {
+            const response = await fetch('http://140.245.241.117/api/tasks', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -333,7 +333,7 @@ async function loadProfile() {
     // View task details
     async function viewTaskDetails(taskId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/tasks/${taskId}`, {
+            const response = await fetch(`http://140.245.241.117/api/tasks/${taskId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -387,12 +387,12 @@ async function loadProfile() {
     async function loadPlacementData() {
         try {
             const [updatesRes, statusRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/placement-updates', {
+                fetch('http://140.245.241.117/api/placement-updates', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('http://127.0.0.1:5000/api/placement-status', {
+                fetch('http://140.245.241.117/api/placement-status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -485,7 +485,7 @@ async function loadProfile() {
     // Load students
     async function loadStudents() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/students', {
+            const response = await fetch('http://140.245.241.117/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -540,7 +540,7 @@ async function loadProfile() {
     // Load meetings
     async function loadMeetings(filter = 'upcoming') {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/meetings', {
+            const response = await fetch('http://140.245.241.117/api/meetings', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -607,7 +607,7 @@ async function loadProfile() {
     // View meeting details
     async function viewMeetingDetails(meetingId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
+            const response = await fetch(`http://140.245.241.117/api/meetings/${meetingId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -631,7 +631,7 @@ async function loadProfile() {
     // Delete meeting
     async function deleteMeeting(meetingId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
+            const response = await fetch(`http://140.245.241.117/api/meetings/${meetingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -655,7 +655,7 @@ async function loadProfile() {
     async function deletePlacementUpdate(updateId) {
         try {
             
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-updates/${updateId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-updates/${updateId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -678,7 +678,7 @@ async function loadProfile() {
     // Edit placement status
     async function editPlacementStatus(placementId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-status/${placementId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -706,7 +706,7 @@ async function loadProfile() {
     // Delete placement status
     async function deletePlacementStatus(placementId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-status/${placementId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -754,7 +754,7 @@ async function loadProfile() {
         student_ids: studentIds
     });
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/tasks', {
+            const response = await fetch('http://140.245.241.117/api/tasks', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -797,7 +797,7 @@ async function loadProfile() {
     const is_important = document.getElementById('updateImportant').checked;
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/placement-updates', {
+        const response = await fetch('http://140.245.241.117/api/placement-updates', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -843,7 +843,7 @@ async function loadProfile() {
         };
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/placement-status', {
+            const response = await fetch('http://140.245.241.117/api/placement-status', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -890,7 +890,7 @@ async function loadProfile() {
         const participantIds = Array.from(document.getElementById('meetingParticipants').selectedOptions).map(opt => opt.value);
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/meetings', {
+            const response = await fetch('http://140.245.241.117/api/meetings', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -936,7 +936,7 @@ async function loadProfile() {
         const specialization = document.getElementById('profileSpecialization').value;
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/profile', {
+            const response = await fetch('http://140.245.241.117/api/profile', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -978,7 +978,7 @@ async function loadProfile() {
         }
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/change-password', {
+            const response = await fetch('http://140.245.241.117/api/change-password', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1030,7 +1030,7 @@ async function loadProfile() {
     // Load students for task assignment when modal is shown
     document.getElementById('createTaskModal').addEventListener('show.bs.modal', async function() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/students', {
+            const response = await fetch('http://140.245.241.117/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1064,7 +1064,7 @@ async function loadProfile() {
     // Load students for placement status when modal is shown
     document.getElementById('addPlacementStatusModal').addEventListener('show.bs.modal', async function() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/students', {
+            const response = await fetch('http://140.245.241.117/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1095,12 +1095,12 @@ async function loadProfile() {
     document.getElementById('scheduleMeetingModal').addEventListener('show.bs.modal', async function() {
         try {
             const [studentsRes, mentorsRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/students', {
+                fetch('http://140.245.241.117/api/students', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('http://127.0.0.1:5000/api/mentors', {
+                fetch('http://140.245.241.117/api/mentors', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

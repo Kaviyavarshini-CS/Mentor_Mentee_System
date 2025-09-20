@@ -22,25 +22,25 @@ async function loadDashboardData() {
         
         // Load all dashboard data
         const [dashboardRes, tasksRes, meetingsRes, placementRes] = await Promise.all([
-            fetch('http://127.0.0.1:5000/api/dashboard/student', {
+            fetch('http://140.245.241.117/api/dashboard/student', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             }),
-            fetch('http://127.0.0.1:5000/api/tasks', {
+            fetch('http://140.245.241.117/api/tasks', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             }),
-            fetch('http://127.0.0.1:5000/api/meetings', {
+            fetch('http://140.245.241.117/api/meetings', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             }),
-            fetch('http://127.0.0.1:5000/api/placement-updates', {
+            fetch('http://140.245.241.117/api/placement-updates', {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -154,7 +154,7 @@ async function loadDashboardData() {
 // Load profile data
 async function loadProfile() {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/profile', {
+        const response = await fetch('http://140.245.241.117/api/profile', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -189,7 +189,7 @@ async function loadProfile() {
 // Load tasks
 async function loadTasks(filter = 'all') {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/tasks', {
+        const response = await fetch('http://140.245.241.117/api/tasks', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -252,7 +252,7 @@ async function loadTasks(filter = 'all') {
 // Load meetings
 async function loadMeetings(filter = 'upcoming') {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/meetings', {
+        const response = await fetch('http://140.245.241.117/api/meetings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -321,13 +321,13 @@ async function loadMeetings(filter = 'upcoming') {
 async function loadPlacementData() {
     try {
         const [updatesRes, statusRes] = await Promise.all([
-            fetch('http://127.0.0.1:5000/api/placement-updates', {
+            fetch('http://140.245.241.117/api/placement-updates', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             }),
-            fetch('http://127.0.0.1:5000/api/placement-status', {
+            fetch('http://140.245.241.117/api/placement-status', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -394,7 +394,7 @@ async function loadPlacementData() {
 
 async function loadPlacementDropdown() {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/placements', {
+        const response = await fetch('http://140.245.241.117/api/placements', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -422,7 +422,7 @@ async function loadPlacementDropdown() {
 // Open task status modal
 async function openTaskStatusModal(taskId) {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/tasks/${taskId}`, {
+        const response = await fetch(`http://140.245.241.117/api/tasks/${taskId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -451,7 +451,7 @@ async function openTaskStatusModal(taskId) {
 // Open meeting attendance modal
 async function openMeetingAttendanceModal(meetingId) {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/meetings/`, {
+        const response = await fetch(`http://140.245.241.117/api/meetings/`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -483,7 +483,7 @@ document.getElementById('saveTaskStatus').addEventListener('click', async functi
     const remarks = document.getElementById('taskRemarks').value;
     
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/tasks/${taskId}/status`, {
+        const response = await fetch(`http://140.245.241.117/api/tasks/${taskId}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -515,7 +515,7 @@ document.getElementById('saveAttendanceStatus').addEventListener('click', async 
     const status = document.getElementById('attendanceStatus').value;
     
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/meetings/attendance`, {
+        const response = await fetch(`http://140.245.241.117/api/meetings/attendance`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -568,7 +568,7 @@ document.getElementById('savePlacementStatus').addEventListener('click', async f
     const notes = document.getElementById('placementNotes').value;
     
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/placement-status', {
+        const response = await fetch('http://140.245.241.117/api/placement-status', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -618,7 +618,7 @@ document.getElementById('profileForm').addEventListener('submit', async function
     
     try {
         // Update user info
-        const response = await fetch('http://127.0.0.1:5000/api/profile', {
+        const response = await fetch('http://140.245.241.117/api/profile', {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -660,7 +660,7 @@ document.getElementById('passwordForm').addEventListener('submit', async functio
     }
     
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/change-password', {
+        const response = await fetch('http://140.245.241.117/api/change-password', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

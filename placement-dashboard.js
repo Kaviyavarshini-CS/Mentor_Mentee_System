@@ -24,17 +24,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Load all dashboard data
             const [dashboardRes, updatesRes, statusRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/dashboard/placement-officer', {
+                fetch('http://140.245.241.117/api/dashboard/placement-officer', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('http://127.0.0.1:5000/api/placement-updates', {
+                fetch('http://140.245.241.117/api/placement-updates', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch('http://127.0.0.1:5000/api/placement-status', {
+                fetch('http://140.245.241.117/api/placement-status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load profile data
     async function loadProfile() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/profile', {
+            const response = await fetch('http://140.245.241.117/api/profile', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadPlacementData() {
         try {
             const [updatesRes, statusRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/placement-updates', {
+                fetch('http://140.245.241.117/api/placement-updates', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // View placement details
     async function viewPlacementDetails(placementId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-status/${placementId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Edit placement status
     async function editPlacementStatus(placementId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-status/${placementId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete placement status
     async function deletePlacementStatus(placementId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-status/${placementId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-status/${placementId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete placement update
     async function deletePlacementUpdate(updateId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/placement-updates/${updateId}`, {
+            const response = await fetch(`http://140.245.241.117/api/placement-updates/${updateId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -476,12 +476,12 @@ document.addEventListener('DOMContentLoaded', function() {
     async function viewStudentDetails(studentId) {
         try {
             const [studentRes, placementRes] = await Promise.all([
-                fetch(`http://127.0.0.1:5000/api/students/${studentId}`, {
+                fetch(`http://140.245.241.117/api/students/${studentId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }),
-                fetch(`http://127.0.0.1:5000/api/placement-status?student_id=${studentId}`, {
+                fetch(`http://140.245.241.117/api/placement-status?student_id=${studentId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -530,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load meetings
     async function loadMeetings(filter = 'upcoming') {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/meetings', {
+            const response = await fetch('http://140.245.241.117/api/meetings', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -597,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // View meeting details
     async function viewMeetingDetails(meetingId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
+            const response = await fetch(`http://140.245.241.117/api/meetings/${meetingId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -621,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete meeting
     async function deleteMeeting(meetingId) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/meetings/${meetingId}`, {
+            const response = await fetch(`http://140.245.241.117/api/meetings/${meetingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -794,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const email = document.getElementById('profileEmail').value;
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/profile', {
+            const response = await fetch('http://140.245.241.117/api/profile', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -833,7 +833,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/change-password', {
+            const response = await fetch('http://140.245.241.117/api/change-password', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -873,7 +873,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load students for placement status when modal is shown
     document.getElementById('addPlacementStatusModal').addEventListener('show.bs.modal', async function() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/students', {
+            const response = await fetch('http://140.245.241.117/api/students', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -904,7 +904,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('scheduleMeetingModal').addEventListener('show.bs.modal', async function() {
         try {
             const [studentsRes, mentorsRes] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/students', {
+                fetch('http://140.245.241.117/api/students', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
