@@ -26,7 +26,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     const password = document.getElementById('loginPassword').value;
     
     try {
-        const response = await fetch('http://140.245.241.117/api/login', {
+        const response = await fetch('http://127.0.0.1:80/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -96,7 +96,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     }
     
     try {
-        const response = await fetch('http://140.245.241.117/api/register', {
+        const response = await fetch('http://127.0.0.1:80/api/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
